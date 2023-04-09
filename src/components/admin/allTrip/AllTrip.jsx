@@ -11,24 +11,12 @@ import Notiflix from "notiflix";
 import { useDispatch, useSelector } from "react-redux";
 import { selectTrips, STORE_TRIPS } from "../../../store/slice/tripSlice";
 import useFetchCollection from "../../../customHooks/useFetchCollection";
-import {
-  FILTER_BY_SEARCH,
-  selectFilteredTrips,
-} from "../../../store/slice/filterSlice";
 
 import React from "react";
 
 const AllTrip = () => {
-  const [search, setSearch] = useState("");
   const { data, isLoading } = useFetchCollection("trips");
   const trips = useSelector(selectTrips);
-  const filteredTrips = useSelector(selectFilteredTrips);
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [tripsPerPage, setTripsPerPage] = useState(10);
-  // Get Current Trips
-  const indexOfLastTrip = currentPage * tripsPerPage;
-  const indexOfFirstTrip = indexOfLastTrip - tripsPerPage;
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -38,10 +26,6 @@ const AllTrip = () => {
       })
     );
   }, [dispatch, data]);
-
-  useEffect(() => {
-    dispatch(FILTER_BY_SEARCH({ trips, search }));
-  }, [dispatch, trips, search]);
 
   const confirmDelete = (id, imageURL) => {
     Notiflix.Confirm.show(
@@ -97,14 +81,14 @@ const AllTrip = () => {
                 <th>s/n</th>
                 <th>Image</th>
                 <th>Name</th>
-                <th>Category</th>
+                <th>desc</th>
                 <th>Price</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {trips.map((trip, index) => {
-                const { id, name, price, imageURL, category } = trip;
+                const { id, name, price, imageURL, desc } = trip;
                 return (
                   <tr key={id}>
                     <td>{index + 1}</td>
@@ -116,23 +100,25 @@ const AllTrip = () => {
                       />
                     </td>
                     <td>{name}</td>
-                    <td>{category}</td>
+                    <td>{desc}</td>
                     <td>{`$${price}`}</td>
                     <td>
-                      <Link
-                        to={`/CRM-passenger-transportation/admin/addTrip/${id}`}
-                      >
-                        <Button variant="success">
-                          <FaEdit size={20} color="white" />
+                      <div className="d-flex gap-2">
+                        <Link
+                          to={`/CRM-passenger-transportation/admin/addTrip/${id}`}
+                        >
+                          <Button variant="success">
+                            <FaEdit size={20} color="white" />
+                          </Button>
+                        </Link>
+                        &nbsp;
+                        <Button
+                          variant="danger"
+                          onClick={() => confirmDelete(id, imageURL)}
+                        >
+                          <FaTrashAlt size={18} color="white" />
                         </Button>
-                      </Link>
-                      &nbsp;
-                      <Button
-                        variant="danger"
-                        onClick={() => confirmDelete(id, imageURL)}
-                      >
-                        <FaTrashAlt size={18} color="white" />
-                      </Button>
+                      </div>
                     </td>
                   </tr>
                 );

@@ -5,7 +5,7 @@ import { auth, db } from "../../firebase/config";
 import { toast } from "react-toastify";
 import React from "react";
 import { Button, Col, Container, Form, Row, Stack } from "react-bootstrap";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, Timestamp } from "firebase/firestore";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -31,6 +31,9 @@ const Register = () => {
         addDoc(collection(db, "users"), {
           email: user.email,
           displayName: "User" + Math.floor(Math.random() * 1000),
+          photoURL: '',
+          role: 'user',
+          createdAt: Timestamp.now().toDate(),
         });
 
         setIsLoading(false);

@@ -1,247 +1,125 @@
-import { addDoc, collection, doc, setDoc, Timestamp } from "firebase/firestore";
-import {
-  deleteObject,
-  getDownloadURL,
-  ref,
-  uploadBytesResumable,
-} from "firebase/storage";
-import { useState } from "react";
-import { useSelector } from "react-redux";
-import { useNavigate, useParams } from "react-router-dom";
+import { deleteDoc, doc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { db, storage } from "../../../firebase/config";
-
-import { selectTrips } from "../../../store/slice/tripSlice";
-
-const categories = [
-  { id: 1, name: "Laptop" },
-  { id: 2, name: "Electronics" },
-  { id: 3, name: "Fashion" },
-  { id: 4, name: "Phone" },
-];
-
-const initialState = {
-  name: "",
-  imageURL: "",
-  price: 0,
-  category: "",
-  brand: "",
-  desc: "",
-};
+import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import { deleteObject, ref } from "firebase/storage";
+import Notiflix from "notiflix";
+import { useDispatch, useSelector } from "react-redux";
+import { selectUsers, STORE_USERS } from "../../../store/slice/userSlice";
+import useFetchCollection from "../../../customHooks/useFetchCollection";
+import { Table, Image, Button, Container } from "react-bootstrap";
 
 const UserList = () => {
-  const { id } = useParams();
-  const products = useSelector(selectTrips);
-  const productEdit = products.find((item) => item.id === id);
-  console.log(productEdit);
-
-  const [product, setProduct] = useState(() => {
-    const newState = detectForm(id, { ...initialState }, productEdit);
-    return newState;
-  });
-
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const { data, isLoading } = useFetchCollection("users");
+  const users = useSelector(selectUsers);
+  console.log(data);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  useEffect(() => {
+    dispatch(
+      STORE_USERS({
+        users: data,
+      })
+    );
+  }, [dispatch, data]);
 
-  function detectForm(id, f1, f2) {
-    if (id === "ADD") {
-      return f1;
-    }
-    return f1;
-  }
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setProduct({ ...product, [name]: value });
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    // console.log(file);
-
-    const storageRef = ref(storage, `eshop/${Date.now()}${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        const progress =
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setUploadProgress(progress);
+  const confirmDelete = (id, imageURL) => {
+    Notiflix.Confirm.show(
+      "Delete User!!!",
+      "You are about to delete this user",
+      "Delete",
+      "Cancel",
+      function okCb() {
+        deleteUser(id, imageURL);
       },
-      (error) => {
-        toast.error(error.message);
+      function cancelCb() {
+        console.log("Delete Canceled");
       },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          setProduct({ ...product, imageURL: downloadURL });
-          toast.success("Image uploaded successfully.");
-        });
+      {
+        width: "320px",
+        borderRadius: "3px",
+        titleColor: "orangered",
+        okButtonBackground: "orangered",
+        cssAnimationStyle: "zoom",
       }
     );
   };
 
-  const addProduct = (e) => {
-    e.preventDefault();
-    // console.log(product);
-    setIsLoading(true);
-
+  const deleteUser = async (id, imageURL) => {
     try {
-      addDoc(collection(db, "products"), {
-        name: product.name,
-        imageURL: product.imageURL,
-        price: Number(product.price),
-        category: product.category,
-        brand: product.brand,
-        desc: product.desc,
-        createdAt: Timestamp.now().toDate(),
-      });
-      setIsLoading(false);
-      setUploadProgress(0);
-      setProduct({ ...initialState });
+      await deleteDoc(doc(db, "users", id));
 
-      toast.success("Product uploaded successfully.");
-      navigate("/admin/all-products");
+      const storageRef = ref(storage, imageURL);
+      await deleteObject(storageRef);
+      toast.success("User deleted successfully.");
     } catch (error) {
-      setIsLoading(false);
-      toast.error(error.message);
-    }
-  };
-
-  const editProduct = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    if (product.imageURL !== productEdit.imageURL) {
-      const storageRef = ref(storage, productEdit.imageURL);
-      deleteObject(storageRef);
-    }
-
-    try {
-      setDoc(doc(db, "products", id), {
-        name: product.name,
-        imageURL: product.imageURL,
-        price: Number(product.price),
-        category: product.category,
-        brand: product.brand,
-        desc: product.desc,
-        createdAt: productEdit.createdAt,
-        editedAt: Timestamp.now().toDate(),
-      });
-      setIsLoading(false);
-      toast.success("Product Edited Successfully");
-      navigate("/admin/all-products");
-    } catch (error) {
-      setIsLoading(false);
       toast.error(error.message);
     }
   };
 
   return (
-    <>
-      <div>
-        <h2>{detectForm(id, "Add New Product", "Edit Product")}</h2>
-        <div>
-          <form onSubmit={detectForm(id, addProduct, editProduct)}>
-            <label>Product name:</label>
-            <input
-              type="text"
-              placeholder="Product name"
-              required
-              name="name"
-              value={product?.name}
-              onChange={(e) => handleInputChange(e)}
-            />
-
-            <label>Product image:</label>
-            <div>
-              {uploadProgress === 0 ? null : (
-                <div>
-                  <div>
-                    {uploadProgress < 100
-                      ? `Uploading ${uploadProgress}`
-                      : `Upload Complete ${uploadProgress}%`}
-                  </div>
-                </div>
-              )}
-
-              <input
-                type="file"
-                accept="image/*"
-                placeholder="Product Image"
-                name="image"
-                onChange={(e) => handleImageChange(e)}
-              />
-
-              {product.imageURL === "" ? null : (
-                <input
-                  type="text"
-                  // required
-                  placeholder="Image URL"
-                  name="imageURL"
-                  value={product?.imageURL}
-                  disabled
-                />
-              )}
-            </div>
-
-            <label>Product price:</label>
-            <input
-              type="number"
-              placeholder="Product price"
-              required
-              name="price"
-              value={product?.price}
-              onChange={(e) => handleInputChange(e)}
-            />
-            <label>Product Category:</label>
-            <select
-              required
-              name="category"
-              value={product?.category}
-              onChange={(e) => handleInputChange(e)}
-            >
-              <option value="" disabled>
-                -- choose product category --
-              </option>
-              {categories.map((cat) => {
-                return (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                );
-              })}
-            </select>
-
-            <label>Product Company/Brand:</label>
-            <input
-              type="text"
-              placeholder="Product brand"
-              required
-              name="brand"
-              value={product?.brand}
-              onChange={(e) => handleInputChange(e)}
-            />
-
-            <label>Product Description</label>
-            <textarea
-              name="desc"
-              required
-              value={product?.desc}
-              onChange={(e) => handleInputChange(e)}
-              cols="30"
-              rows="10"
-            ></textarea>
-
-            <button className="--btn --btn-primary">
-              {detectForm(id, "Save Product", "Edit Product")}
-            </button>
-          </form>
-        </div>
-      </div>
-    </>
+    <Container>
+      <h2>All Users</h2>
+      {users.length === 0 ? (
+        <p>No user found.</p>
+      ) : (
+        <Table striped bordered hover>
+          <thead>
+            <tr>
+              <th>s/n</th>
+              <th>Image</th>
+              <th>Name</th>
+              <th>role</th>
+              <th>email</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user, index) => {
+              const { id, displayName, email, photoURL, role } = user;
+              return (
+                <tr key={id}>
+                  <td>{index + 1}</td>
+                  <td>
+                    <Image
+                      src={photoURL}
+                      alt={displayName}
+                      style={{ width: "100px" }}
+                    />
+                  </td>
+                  <td>{displayName}</td>
+                  <td>{role}</td>
+                  <td>{email}</td>
+                  <td>
+                    <div className="d-flex gap-2">
+                      <Button
+                        variant="success"
+                        onClick={() =>
+                          navigate(
+                            `/CRM-passenger-transportation/admin/addUser/${id}`
+                          )
+                        }
+                      >
+                        <FaEdit size={20} />
+                      </Button>
+                      &nbsp;
+                      <Button
+                        variant="danger"
+                        onClick={() => confirmDelete(id, displayName)}
+                      >
+                        <FaTrashAlt size={18} />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </Table>
+      )}
+    </Container>
   );
 };
 

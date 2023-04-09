@@ -9,7 +9,7 @@ import {
 import { auth, db } from "../../firebase/config";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
-import { doc, getDoc, updateDoc, addDoc, collection } from "firebase/firestore";
+import { doc, getDoc, updateDoc, addDoc, collection, Timestamp } from "firebase/firestore";
 import React from "react";
 
 const LoginForm = () => {
@@ -56,6 +56,7 @@ const LoginForm = () => {
 
         if (userDoc.exists()) {
           await updateDoc(userDocRef, {
+            email: user.email,
             displayName: user.displayName,
             photoURL: user.photoURL,
           });
@@ -64,6 +65,8 @@ const LoginForm = () => {
             email: user.email,
             displayName: user.displayName,
             photoURL: user.photoURL,
+            role: 'user',
+            createdAt: Timestamp.now().toDate(),
           });
         }
         toast.success("Login Successfully");

@@ -1,0 +1,13 @@
+{
+  "headers": [
+    {
+      "source": "/__/firebase/init.js",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "http://localhost:3000"
+        }
+      ]
+    }
+  ]
+}

@@ -12,23 +12,24 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { db, storage } from "../../../firebase/config";
 import { Form, Button, Container } from "react-bootstrap";
-import { selectTrips } from "../../../store/slice/tripSlice";
+import { selectUsers } from "../../../store/slice/userSlice";
 
 const initialState = {
-  name: "",
-  imageURL: "",
-  price: 0,
-  desc: "",
+  displayName: "",
+  photoURL: "",
+  email: "",
+  role: "",
 };
 
-const UserList = () => {
+const AddUser = () => {
   const { id } = useParams();
-  const trips = useSelector(selectTrips);
-  const tripEdit = trips.find((item) => item.id === id);
-  console.log(tripEdit);
+  const users = useSelector(selectUsers);
+  console.log(users);
+  const userEdit = users.find((item) => item.id === id);
+  console.log(userEdit);
 
-  const [trip, setTrip] = useState(() => {
-    const newState = detectForm(id, { ...initialState }, tripEdit);
+  const [user, setUser] = useState(() => {
+    const newState = detectForm(id, { ...initialState }, userEdit);
     return newState;
   });
 
@@ -45,7 +46,7 @@ const UserList = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setTrip({ ...trip, [name]: value });
+    setUser({ ...user, [name]: value });
   };
 
   const handleImageChange = (e) => {
@@ -67,58 +68,58 @@ const UserList = () => {
       },
       () => {
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          setTrip({ ...trip, imageURL: downloadURL });
+          setUser({ ...user, photoURL: downloadURL });
           toast.success("Image uploaded successfully.");
         });
       }
     );
   };
 
-  const addTrip = (e) => {
+  const addUser = (e) => {
     e.preventDefault();
-    // console.log(trip);
+    // console.log(user);
     setIsLoading(true);
 
     try {
-      addDoc(collection(db, "trips"), {
-        name: trip.name,
-        imageURL: trip.imageURL,
-        price: Number(trip.price),
-        desc: trip.desc,
+      addDoc(collection(db, "users"), {
+        name: user.displayName,
+        photoURL: user.photoURL,
+        email: user.email,
+        role: user.role,
         createdAt: Timestamp.now().toDate(),
       });
       setIsLoading(false);
       setUploadProgress(0);
-      setTrip({ ...initialState });
+      setUser({ ...initialState });
 
-      toast.success("Trip uploaded successfully.");
-      // navigate("/admin/all-trips");
+      toast.success("User uploaded successfully.");
+      // navigate("/admin/all-users");
     } catch (error) {
       setIsLoading(false);
       toast.error(error.message);
     }
   };
 
-  const editTrip = (e) => {
+  const editUser = (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    if (trip.imageURL !== tripEdit.imageURL) {
-      const storageRef = ref(storage, `${tripEdit.imageURL}`);
+    if (user.photoURL !== userEdit.photoURL) {
+      const storageRef = ref(storage, `${userEdit.photoURL}`);
       deleteObject(storageRef);
     }
 
     try {
-      setDoc(doc(db, "trips", id), {
-        name: trip.name,
-        imageURL: trip.imageURL,
-        price: Number(trip.price),
-        desc: trip.desc,
+      setDoc(doc(db, "users", id), {
+        name: user.displayName,
+        photoURL: user.photoURL,
+        email: user.email,
+        role: user.role,
         createdAt: Timestamp.now().toDate(),
       });
       setIsLoading(false);
-      toast.success("Trip Edited Successfully");
-      // navigate("/admin/all-trips");
+      toast.success("User Edited Successfully");
+      // navigate("/admin/all-users");
     } catch (error) {
       setIsLoading(false);
       toast.error(error.message);
@@ -128,23 +129,23 @@ const UserList = () => {
   return (
     <>
       <Container>
-        <h2>{detectForm(id, "Add New Trip", "Edit Trip")}</h2>
+        <h2>{detectForm(id, "Add New User", "Edit User")}</h2>
         <div>
-          <Form onSubmit={detectForm(id, addTrip, editTrip)}>
+          <Form onSubmit={detectForm(id, addUser, editUser)}>
             <Form.Group>
-              <Form.Label>Trip name:</Form.Label>
+              <Form.Label>User name:</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Trip name"
+                placeholder="User name"
                 required
                 name="name"
-                value={trip?.name}
+                value={user?.displayName}
                 onChange={(e) => handleInputChange(e)}
               />
             </Form.Group>
 
             <Form.Group>
-              <Form.Label>Trip image:</Form.Label>
+              <Form.Label>User image:</Form.Label>
               <div>
                 {uploadProgress === 0 ? null : (
                   <div>
@@ -159,48 +160,46 @@ const UserList = () => {
                 <Form.Control
                   type="file"
                   accept="image/*"
-                  placeholder="Trip Image"
+                  placeholder="User Image"
                   name="image"
                   onChange={(e) => handleImageChange(e)}
                 />
-                {trip.imageURL === "" ? null : (
+                {user.photoURL === "" ? null : (
                   <Form.Control
                     type="text"
                     placeholder="Image URL"
-                    name="imageURL"
-                    value={trip?.imageURL}
+                    name="photoURL"
+                    value={user?.photoURL}
                     disabled
                   />
                 )}
               </div>
             </Form.Group>
             <Form.Group>
-              <Form.Label>Trip price:</Form.Label>
+              <Form.Label>User email:</Form.Label>
               <Form.Control
-                type="number"
-                placeholder="Trip price"
+                type="text"
+                placeholder="User email"
                 required
-                name="price"
-                value={trip?.price}
+                name="email"
+                value={user?.email}
                 onChange={(e) => handleInputChange(e)}
               />
             </Form.Group>
 
             <Form.Group>
-              <Form.Label>Trip Description</Form.Label>
+              <Form.Label>User role</Form.Label>
               <Form.Control
-                as="textarea"
-                name="desc"
+                type="text"
+                name="role"
                 required
-                value={trip?.desc}
+                value={user?.role}
                 onChange={(e) => handleInputChange(e)}
-                cols="30"
-                rows="10"
               />
             </Form.Group>
 
             <Button variant="primary" type="submit" className="mt-2">
-              {detectForm(id, "Save Trip", "Edit Trip")}
+              {detectForm(id, "Save User", "Edit User")}
             </Button>
           </Form>
         </div>
@@ -209,4 +208,4 @@ const UserList = () => {
   );
 };
 
-export default UserList;
+export default AddUser;

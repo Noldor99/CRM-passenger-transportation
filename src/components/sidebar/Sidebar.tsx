@@ -55,6 +55,9 @@ const Sidebar = () => {
             <Nav.Link onClick={() => navigate("admin/orders")}>
               <FaShoppingCart /> Orders
             </Nav.Link>
+            <Nav.Link onClick={() => navigate("admin/addUser/ADD")}>
+              <FaUsers /> AddUser
+            </Nav.Link>
             <Nav.Link onClick={() => navigate("admin/userList")}>
               <FaUsers /> UserList
             </Nav.Link>
@@ -79,7 +82,6 @@ const Sidebar = () => {
               <BsGear /> Settings
             </Nav.Link>
           </UserOnlyLink>
-
           <ShowOnLogin>
             <Nav.Link href="#" onClick={logoutUser}>
               <BsBoxArrowRight /> Logout
